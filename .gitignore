@@ -1,0 +1,39 @@
+# ZMAIL .gitignore
+
+# Temporary files
+*.tmp
+*.bak
+*.swp
+*~
+
+# Logs
+*.log
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Editor files
+.vscode/
+.idea/
+*.sublime-*
+
+# Backup files
+*.backup
+*.old
+
+# Private keys and certificates (never commit!)
+*.pem
+*.key
+*.crt
+*.p12
+*.pfx
+
+# Database dumps
+*.sql
+*.db
+
+# Config files with sensitive data
+*password*
+*secret*
+.env

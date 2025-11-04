@@ -1,0 +1,9 @@
+# MySQL configuration for Dovecot authentication
+driver = mysql
+connect = host=127.0.0.1 dbname=mailserver user=mailuser password=CHANGE_THIS_PASSWORD
+
+# Password query
+password_query = SELECT email as user, password FROM virtual_users WHERE email='%u';
+
+# User iteration query (for doveadm)
+iterate_query = SELECT email as user FROM virtual_users;
