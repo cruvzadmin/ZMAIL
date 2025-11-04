@@ -103,10 +103,18 @@ log_info "Firewall configured successfully"
 
 # Setup MySQL database for mail users
 log_info "Setting up MySQL database..."
+MYSQL_PASSWORD=$(openssl rand -base64 32)
 mysql -e "CREATE DATABASE IF NOT EXISTS mailserver;"
-mysql -e "CREATE USER IF NOT EXISTS 'mailuser'@'localhost' IDENTIFIED BY '$(openssl rand -base64 32)';"
+mysql -e "CREATE USER IF NOT EXISTS 'mailuser'@'localhost' IDENTIFIED BY '$MYSQL_PASSWORD';"
 mysql -e "GRANT ALL PRIVILEGES ON mailserver.* TO 'mailuser'@'localhost';"
 mysql -e "FLUSH PRIVILEGES;"
+
+log_info "MySQL password for 'mailuser' has been generated"
+log_warn "IMPORTANT: Save this password, you will need it for configuration:"
+echo ""
+echo "MySQL Password: $MYSQL_PASSWORD"
+echo ""
+read -p "Press Enter after you have saved the password..."
 
 # Create database tables
 mysql mailserver << EOF

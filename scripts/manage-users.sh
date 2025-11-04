@@ -64,10 +64,10 @@ add_user() {
     fi
     
     # Extract domain from email
-    local domain=$(echo $email | cut -d'@' -f2)
+    local domain=$(echo "$email" | cut -d'@' -f2)
     
     # Check if domain exists
-    local domain_id=$(mysql -N -s $MYSQL_DB -e "SELECT id FROM virtual_domains WHERE name='$domain'")
+    local domain_id=$(mysql -N -s "$MYSQL_DB" -e "SELECT id FROM virtual_domains WHERE name='$(printf '%s' "$domain" | sed "s/'/''/g")'")
     
     if [ -z "$domain_id" ]; then
         log_error "Domain $domain does not exist in the database"
@@ -77,8 +77,12 @@ add_user() {
     # Hash the password using SHA512-CRYPT
     local hashed_password=$(doveadm pw -s SHA512-CRYPT -p "$password")
     
+    # Escape email and password for SQL
+    local escaped_email=$(printf '%s' "$email" | sed "s/'/''/g")
+    local escaped_password=$(printf '%s' "$hashed_password" | sed "s/'/''/g")
+    
     # Insert user
-    mysql $MYSQL_DB -e "INSERT INTO virtual_users (domain_id, email, password) VALUES ($domain_id, '$email', '$hashed_password')"
+    mysql "$MYSQL_DB" -e "INSERT INTO virtual_users (domain_id, email, password) VALUES ($domain_id, '$escaped_email', '$escaped_password')"
     
     # Create mail directory
     local mail_dir="/var/mail/vhosts/$domain/${email%%@*}"
@@ -98,7 +102,8 @@ delete_user() {
     fi
     
     # Delete user from database
-    mysql $MYSQL_DB -e "DELETE FROM virtual_users WHERE email='$email'"
+    local escaped_email=$(printf '%s' "$email" | sed "s/'/''/g")
+    mysql "$MYSQL_DB" -e "DELETE FROM virtual_users WHERE email='$escaped_email'"
     
     log_info "User $email deleted successfully"
     log_warn "Mail data in /var/mail/vhosts/ was not deleted. Remove manually if needed."
@@ -122,8 +127,12 @@ change_password() {
     # Hash the password
     local hashed_password=$(doveadm pw -s SHA512-CRYPT -p "$new_password")
     
+    # Escape variables for SQL
+    local escaped_email=$(printf '%s' "$email" | sed "s/'/''/g")
+    local escaped_password=$(printf '%s' "$hashed_password" | sed "s/'/''/g")
+    
     # Update password
-    mysql $MYSQL_DB -e "UPDATE virtual_users SET password='$hashed_password' WHERE email='$email'"
+    mysql "$MYSQL_DB" -e "UPDATE virtual_users SET password='$escaped_password' WHERE email='$escaped_email'"
     
     log_info "Password for $email changed successfully"
 }
@@ -138,18 +147,22 @@ add_alias() {
     fi
     
     # Extract domain from source
-    local domain=$(echo $source | cut -d'@' -f2)
+    local domain=$(echo "$source" | cut -d'@' -f2)
     
     # Check if domain exists
-    local domain_id=$(mysql -N -s $MYSQL_DB -e "SELECT id FROM virtual_domains WHERE name='$domain'")
+    local domain_id=$(mysql -N -s "$MYSQL_DB" -e "SELECT id FROM virtual_domains WHERE name='$(printf '%s' "$domain" | sed "s/'/''/g")'")
     
     if [ -z "$domain_id" ]; then
         log_error "Domain $domain does not exist in the database"
         exit 1
     fi
     
+    # Escape variables for SQL
+    local escaped_source=$(printf '%s' "$source" | sed "s/'/''/g")
+    local escaped_destination=$(printf '%s' "$destination" | sed "s/'/''/g")
+    
     # Insert alias
-    mysql $MYSQL_DB -e "INSERT INTO virtual_aliases (domain_id, source, destination) VALUES ($domain_id, '$source', '$destination')"
+    mysql "$MYSQL_DB" -e "INSERT INTO virtual_aliases (domain_id, source, destination) VALUES ($domain_id, '$escaped_source', '$escaped_destination')"
     
     log_info "Alias $source -> $destination created successfully"
 }
@@ -163,7 +176,8 @@ delete_alias() {
     fi
     
     # Delete alias
-    mysql $MYSQL_DB -e "DELETE FROM virtual_aliases WHERE source='$source'"
+    local escaped_source=$(printf '%s' "$source" | sed "s/'/''/g")
+    mysql "$MYSQL_DB" -e "DELETE FROM virtual_aliases WHERE source='$escaped_source'"
     
     log_info "Alias $source deleted successfully"
 }

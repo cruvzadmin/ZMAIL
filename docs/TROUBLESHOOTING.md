@@ -620,4 +620,4 @@ If you can't resolve the issue:
 
 ---
 
-**Remember**: Always check `/var/log/mail.log` first - it contains most error information!
+**Tip**: Always check `/var/log/mail.log` first - it contains most error information!

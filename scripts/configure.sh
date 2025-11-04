@@ -35,6 +35,7 @@ read -p "Enter your domain name (e.g., example.com): " DOMAIN
 read -p "Enter your mail server hostname (e.g., mail.example.com): " HOSTNAME
 read -p "Enter MySQL mailuser password: " -s MYSQL_PASSWORD
 echo ""
+echo ""
 
 if [ -z "$DOMAIN" ] || [ -z "$HOSTNAME" ] || [ -z "$MYSQL_PASSWORD" ]; then
     log_error "All fields are required"
