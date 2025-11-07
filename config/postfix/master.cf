@@ -1,0 +1,135 @@
+# Postfix Master Configuration for ZMAIL
+# Ubuntu 24.04 Email Server
+
+# ==========================================================================
+# service type  private unpriv  chroot  wakeup  maxproc command + args
+#               (yes)   (yes)   (no)    (never) (100)
+# ==========================================================================
+
+# SMTP service (port 25)
+smtp      inet  n       -       y       -       -       smtpd
+
+# Submission service (port 587) - for authenticated users
+submission inet n       -       y       -       -       smtpd
+  -o syslog_name=postfix/submission
+  -o smtpd_tls_security_level=encrypt
+  -o smtpd_sasl_auth_enable=yes
+  -o smtpd_tls_auth_only=yes
+  -o smtpd_reject_unlisted_recipient=no
+  -o smtpd_client_restrictions=permit_sasl_authenticated,reject
+  -o smtpd_helo_restrictions=permit_sasl_authenticated,reject
+  -o smtpd_sender_restrictions=permit_sasl_authenticated,reject
+  -o smtpd_recipient_restrictions=permit_sasl_authenticated,reject_unauth_destination
+  -o milter_macro_daemon_name=ORIGINATING
+
+# SMTPS service (port 465) - deprecated but still used
+smtps     inet  n       -       y       -       -       smtpd
+  -o syslog_name=postfix/smtps
+  -o smtpd_tls_wrappermode=yes
+  -o smtpd_sasl_auth_enable=yes
+  -o smtpd_reject_unlisted_recipient=no
+  -o smtpd_client_restrictions=permit_sasl_authenticated,reject
+  -o smtpd_helo_restrictions=permit_sasl_authenticated,reject
+  -o smtpd_sender_restrictions=permit_sasl_authenticated,reject
+  -o smtpd_recipient_restrictions=permit_sasl_authenticated,reject_unauth_destination
+  -o milter_macro_daemon_name=ORIGINATING
+
+# Pickup service - picks up messages from the maildrop directory
+pickup    unix  n       -       y       60      1       pickup
+
+# Cleanup service - rewrites and adds missing headers
+cleanup   unix  n       -       y       -       0       cleanup
+
+# Queue manager - manages the mail queue
+qmgr      unix  n       -       n       300     1       qmgr
+
+# TLS session cache database
+tlsmgr    unix  -       -       y       1000?   1       tlsmgr
+
+# Rewrite service
+rewrite   unix  -       -       y       -       -       trivial-rewrite
+
+# Bounce messages
+bounce    unix  -       -       y       -       0       bounce
+
+# Defer messages
+defer     unix  -       -       y       -       0       bounce
+
+# Trace service
+trace     unix  -       -       y       -       0       bounce
+
+# Verify service
+verify    unix  -       -       y       -       1       verify
+
+# Flush service
+flush     unix  n       -       y       1000?   0       flush
+
+# Proxymap service
+proxymap  unix  -       -       n       -       -       proxymap
+
+# Proxywrite service
+proxywrite unix -       -       n       -       1       proxymap
+
+# SMTP client
+smtp      unix  -       -       y       -       -       smtp
+
+# Relay service
+relay     unix  -       -       y       -       -       smtp
+  -o syslog_name=postfix/$service_name
+
+# Showq service
+showq     unix  n       -       y       -       -       showq
+
+# Error service
+error     unix  -       -       y       -       -       error
+
+# Retry service
+retry     unix  -       -       y       -       -       error
+
+# Discard service
+discard   unix  -       -       y       -       -       discard
+
+# Local delivery agent
+local     unix  -       n       n       -       -       local
+
+# Virtual delivery agent
+virtual   unix  -       n       n       -       -       virtual
+
+# LMTP service for Dovecot
+lmtp      unix  -       -       y       -       -       lmtp
+
+# Address verification
+verify    unix  -       -       y       -       1       verify
+
+# Anvil service - connection/rate limiting
+anvil     unix  -       -       y       -       1       anvil
+
+# Scache service - connection cache
+scache    unix  -       -       y       -       1       scache
+
+# Postlog service
+postlog   unix-dgram n  -       n       -       1       postlogd
+
+# Maildrop - old-style local delivery
+maildrop  unix  -       n       n       -       -       pipe
+  flags=DRXhu user=vmail argv=/usr/bin/maildrop -d ${recipient}
+
+# Uucp service
+uucp      unix  -       n       n       -       -       pipe
+  flags=Fqhu user=uucp argv=uux -r -n -z -a$sender - $nexthop!rmail ($recipient)
+
+# Interface for remote mail
+ifmail    unix  -       n       n       -       -       pipe
+  flags=F user=ftn argv=/usr/lib/ifmail/ifmail -r $nexthop ($recipient)
+
+# BSmtp delivery
+bsmtp     unix  -       n       n       -       -       pipe
+  flags=Fq. user=bsmtp argv=/usr/lib/bsmtp/bsmtp -t$nexthop -f$sender $recipient
+
+# Scalemail delivery
+scalemail-backend unix -       n       n       -       2       pipe
+  flags=R user=scalemail argv=/usr/lib/scalemail/bin/scalemail-store ${nexthop} ${user} ${extension}
+
+# Mailman mailing list manager
+mailman   unix  -       n       n       -       -       pipe
+  flags=FRX user=list argv=/usr/lib/mailman/bin/postfix-to-mailman.py ${nexthop} ${user}
